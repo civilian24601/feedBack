@@ -1,15 +1,51 @@
+-- Cleanup existing objects
+-- Drop existing storage policies first
+DROP POLICY IF EXISTS "Users can upload their own tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Users can read matched tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own tracks" ON storage.objects;
+DROP POLICY IF EXISTS "Anyone can view avatars" ON storage.objects;
+DROP POLICY IF EXISTS "Users can upload their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own avatar" ON storage.objects;
+
+-- Drop existing storage buckets
+DELETE FROM storage.buckets WHERE id IN ('tracks', 'avatars');
+
+-- Drop existing tables and types in reverse order of dependencies
+DROP TABLE IF EXISTS public.flags CASCADE;
+DROP TABLE IF EXISTS public.feedback CASCADE;
+DROP TABLE IF EXISTS public.matches CASCADE;
+DROP TABLE IF EXISTS public.tracks CASCADE;
+DROP TABLE IF EXISTS public.profiles CASCADE;
+DROP TYPE IF EXISTS public.track_status CASCADE;
+
+-- Drop existing functions
+DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
+DROP FUNCTION IF EXISTS public.handle_new_match() CASCADE;
+DROP FUNCTION IF EXISTS public.check_match_completion() CASCADE;
+
+-- Drop existing triggers
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_match_created ON public.matches;
+DROP TRIGGER IF EXISTS on_feedback_submitted ON public.feedback;
+
+-- Now create everything fresh
+-- Create custom types
+CREATE TYPE public.track_status AS ENUM ('pending', 'matched', 'reviewed');
+
+-- Create profiles table
+CREATE TABLE public.profiles (
+  id UUID REFERENCES auth.users(id) PRIMARY KEY,
+  username TEXT UNIQUE,
+  full_name TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
 create extension if not exists "moddatetime";
-
--- Create profiles table
-create table public.profiles (
-  id uuid references auth.users on delete cascade primary key,
-  email text unique not null,
-  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
-  is_admin boolean default false
-);
 
 -- Set up Row Level Security (RLS) for profiles
 alter table public.profiles enable row level security;
@@ -28,8 +64,6 @@ create policy "Users can update their own profile"
   using ( auth.uid() = id );
 
 -- Create tracks table
-create type public.track_status as enum ('pending', 'matched', 'reviewed');
-
 create table public.tracks (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
@@ -237,7 +271,7 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'tracks' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 -- Allow users to read tracks they have access to (matched tracks)
@@ -248,13 +282,13 @@ USING (
   bucket_id = 'tracks' AND
   (
     -- Allow access to own tracks
-    (storage.foldername(name))[1] = auth.uid()::text OR
+    (storage.foldername(name))[1]::text = auth.uid()::text OR
     -- Allow access to matched tracks (we'll need to implement this logic in the application)
     EXISTS (
       SELECT 1 FROM tracks t
       JOIN matches m ON t.id = m.track_a_id OR t.id = m.track_b_id
       WHERE t.user_id = auth.uid()
-      AND storage.foldername(name)[1] = t.user_id::text
+      AND (storage.foldername(name))[1]::text = t.user_id::text
     )
   )
 );
@@ -265,7 +299,7 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'tracks' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 -- Avatar policies (public bucket)
@@ -279,7 +313,7 @@ ON storage.objects FOR INSERT
 TO authenticated
 WITH CHECK (
   bucket_id = 'avatars' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 CREATE POLICY "Users can update their own avatar"
@@ -287,7 +321,7 @@ ON storage.objects FOR UPDATE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1]::text = auth.uid()::text
 );
 
 CREATE POLICY "Users can delete their own avatar"
@@ -295,5 +329,5 @@ ON storage.objects FOR DELETE
 TO authenticated
 USING (
   bucket_id = 'avatars' AND
-  (storage.foldername(name))[1] = auth.uid()::text
+  (storage.foldername(name))[1]::text = auth.uid()::text
 ); 

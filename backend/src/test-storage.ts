@@ -55,7 +55,9 @@ async function testStorageSetup() {
     // 3. Try to upload with anon client (should fail)
     const { error: anonUploadError } = await userClient.storage
       .from('tracks')
-      .upload(`${userId}/test.txt`, createReadStream(testFilePath))
+      .upload(`${userId}/test.txt`, testContent, {
+        contentType: 'text/plain'
+      })
 
     if (anonUploadError) {
       console.log('✓ Storage policy working: Anonymous upload blocked')
@@ -66,7 +68,9 @@ async function testStorageSetup() {
     // 4. Try to upload with authenticated client (should succeed)
     const { error: authUploadError } = await adminClient.storage
       .from('tracks')
-      .upload(`${userId}/test.txt`, createReadStream(testFilePath))
+      .upload(`${userId}/test.txt`, testContent, {
+        contentType: 'text/plain'
+      })
 
     if (authUploadError) {
       console.error('Error uploading file:', authUploadError.message)
