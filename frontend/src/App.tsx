@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'
 import { UploadPage } from './pages/UploadPage'
 import { useAuth } from './hooks/useAuth'
 import { HomePage } from './pages/HomePage'
+import { LoginPage } from './pages/LoginPage'
+import { SignupPage } from './pages/SignupPage'
 
 function App() {
   const { user, signOut } = useAuth()
@@ -28,7 +30,7 @@ function App() {
                   </Link>
                 </div>
               </div>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-4">
                 {user ? (
                   <button
                     onClick={() => signOut()}
@@ -37,12 +39,20 @@ function App() {
                     Sign Out
                   </button>
                 ) : (
-                  <Link
-                    to="/login"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#6366F1] hover:bg-[#6366F1]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6366F1]"
-                  >
-                    Sign In
-                  </Link>
+                  <>
+                    <Link
+                      to="/login"
+                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-[#6366F1] hover:bg-[#6366F1]/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6366F1]"
+                    >
+                      Sign In
+                    </Link>
+                    <Link
+                      to="/signup"
+                      className="inline-flex items-center px-4 py-2 border border-[#6366F1] text-sm font-medium rounded-md text-[#6366F1] bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#6366F1]"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
                 )}
               </div>
             </div>
@@ -54,7 +64,8 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/upload" element={<UploadPage />} />
-            {/* Add more routes here */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
           </Routes>
         </main>
       </div>
