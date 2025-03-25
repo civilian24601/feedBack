@@ -12,10 +12,11 @@
   "dependencies": {
     "@fontsource/inter": "^5.0.16",
     "@fontsource/jetbrains-mono": "^5.0.16",
+    "@supabase/supabase-js": "^2.49.3",
     "lucide-react": "^0.303.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.21.1",
+    "react-router-dom": "^6.30.0",
     "wavesurfer.js": "^7.5.2"
   },
   "devDependencies": {
