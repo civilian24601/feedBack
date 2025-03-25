@@ -7,6 +7,9 @@
     "start": "node dist/server.js",
     "dev": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/server.ts",
     "build": "tsc",
+    "test-db": "ts-node src/test-db.ts",
+    "test-db-comprehensive": "ts-node src/test-db-comprehensive.ts",
+    "test-rls": "ts-node src/test-rls.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
