@@ -222,4 +222,78 @@ $$;
 
 create trigger on_feedback_submitted
   after insert on public.feedback
-  for each row execute procedure public.check_match_completion(); 
+  for each row execute procedure public.check_match_completion();
+
+-- Create storage buckets
+INSERT INTO storage.buckets (id, name, public) 
+VALUES 
+  ('tracks', 'tracks', false),
+  ('avatars', 'avatars', true);
+
+-- Storage policies
+-- Allow users to upload their own tracks
+CREATE POLICY "Users can upload their own tracks"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'tracks' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Allow users to read tracks they have access to (matched tracks)
+CREATE POLICY "Users can read matched tracks"
+ON storage.objects FOR SELECT
+TO authenticated
+USING (
+  bucket_id = 'tracks' AND
+  (
+    -- Allow access to own tracks
+    (storage.foldername(name))[1] = auth.uid()::text OR
+    -- Allow access to matched tracks (we'll need to implement this logic in the application)
+    EXISTS (
+      SELECT 1 FROM tracks t
+      JOIN matches m ON t.id = m.track_a_id OR t.id = m.track_b_id
+      WHERE t.user_id = auth.uid()
+      AND storage.foldername(name)[1] = t.user_id::text
+    )
+  )
+);
+
+-- Allow users to delete their own tracks
+CREATE POLICY "Users can delete their own tracks"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'tracks' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- Avatar policies (public bucket)
+CREATE POLICY "Anyone can view avatars"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "Users can upload their own avatar"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'avatars' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Users can update their own avatar"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'avatars' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+);
+
+CREATE POLICY "Users can delete their own avatar"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'avatars' AND
+  (storage.foldername(name))[1] = auth.uid()::text
+); 

@@ -10,6 +10,7 @@
     "test-db": "ts-node src/test-db.ts",
     "test-db-comprehensive": "ts-node src/test-db-comprehensive.ts",
     "test-rls": "ts-node src/test-rls.ts",
+    "test-storage": "ts-node src/test-storage.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
