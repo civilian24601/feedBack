@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 import { createReadStream } from 'fs'
 import { join } from 'path'
+import { validateFile, generateUniqueFilename } from './utils/fileValidation'
 
 // Load environment variables
 dotenv.config()
@@ -52,7 +53,26 @@ async function testStorageSetup() {
       })
     })
 
-    // 3. Try to upload with anon client (should fail)
+    // 3. Test file validation
+    console.log('\nTesting file validation...')
+    const mockFile = {
+      name: 'test.mp3',
+      type: 'audio/mpeg',
+      size: 1024 * 1024 // 1MB
+    } as File
+
+    const validationResult = validateFile(mockFile, 'track')
+    if (validationResult.isValid) {
+      console.log('✓ File validation working')
+    } else {
+      console.error('❌ File validation failed:', validationResult.error)
+    }
+
+    // 4. Test unique filename generation
+    const uniqueFilename = generateUniqueFilename('test.mp3', userId)
+    console.log('✓ Unique filename generation working:', uniqueFilename)
+
+    // 5. Try to upload with anon client (should fail)
     const { error: anonUploadError } = await userClient.storage
       .from('tracks')
       .upload(`${userId}/test.txt`, testContent, {
@@ -65,7 +85,7 @@ async function testStorageSetup() {
       console.error('❌ Storage policy failed: Anonymous upload allowed')
     }
 
-    // 4. Try to upload with authenticated client (should succeed)
+    // 6. Try to upload with authenticated client (should succeed)
     const { error: authUploadError } = await adminClient.storage
       .from('tracks')
       .upload(`${userId}/test.txt`, testContent, {
@@ -78,7 +98,7 @@ async function testStorageSetup() {
     }
     console.log('✓ File uploaded successfully')
 
-    // 5. Try to read file with different user (should fail)
+    // 7. Try to read file with different user (should fail)
     const { error: unauthorizedReadError } = await userClient.storage
       .from('tracks')
       .download(`${userId}/test.txt`)
@@ -89,7 +109,7 @@ async function testStorageSetup() {
       console.error('❌ Storage policy failed: Unauthorized read allowed')
     }
 
-    // 6. Clean up
+    // 8. Clean up
     const { error: deleteError } = await adminClient.storage
       .from('tracks')
       .remove([`${userId}/test.txt`])
@@ -100,7 +120,7 @@ async function testStorageSetup() {
     }
     console.log('✓ Test file cleaned up')
 
-    // 7. Clean up test user
+    // 9. Clean up test user
     if (user?.user?.id) {
       const { error: deleteUserError } = await adminClient.auth.admin.deleteUser(user.user.id)
       if (deleteUserError) {
