@@ -29,12 +29,13 @@ export const GiveFeedbackPage = () => {
           .select(`
             id,
             track_b_id,
-            tracks:track_b_id (
+            track_b:track_b_id (
               id,
               title,
               genre,
               feedback_focus,
-              profiles:user_id (
+              user_id,
+              profile:user_id (
                 username,
                 full_name
               )
@@ -45,9 +46,9 @@ export const GiveFeedbackPage = () => {
 
         if (error) throw error
         setTracks(data?.map(match => ({
-          ...match.tracks,
+          ...match.track_b,
           match_id: match.id,
-          artist_name: match.tracks.profiles.username || match.tracks.profiles.full_name
+          artist_name: match.track_b.profile.username || match.track_b.profile.full_name
         })) || [])
       } catch (err) {
         setError('Failed to load tracks waiting for feedback')
