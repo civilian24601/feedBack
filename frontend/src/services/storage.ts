@@ -1,15 +1,8 @@
 import { supabase } from '../lib/supabase'
 import { generateUniqueFilename } from '../utils/fileValidation'
+import { UploadData, ApiResponse } from '../types'
 
-export interface UploadData {
-  file: File | null
-  url: string
-  title: string
-  genre: string
-  feedbackFocus: string[]
-}
-
-export const uploadTrack = async (data: UploadData, userId: string) => {
+export const uploadTrack = async (data: UploadData, userId: string): Promise<ApiResponse<void>> => {
   try {
     let publicUrl = data.url
 
@@ -19,7 +12,7 @@ export const uploadTrack = async (data: UploadData, userId: string) => {
       const filePath = `${userId}/${fileName}`
 
       // Upload file to storage
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('tracks')
         .upload(filePath, data.file)
 
@@ -47,9 +40,12 @@ export const uploadTrack = async (data: UploadData, userId: string) => {
 
     if (dbError) throw dbError
 
-    return { success: true }
-  } catch (error) {
+    return { data: null, error: null }
+  } catch (error: unknown) {
     console.error('Error uploading track:', error)
-    throw error
+    return { 
+      data: null, 
+      error: error instanceof Error ? error.message : 'An unknown error occurred' 
+    }
   }
 } 
